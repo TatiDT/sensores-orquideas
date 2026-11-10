@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sensores de orquídeas (simulados)</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      background: #f4f1f7;
+      color: #2b2233;
+    }
+
+    header {
+      padding: 1.5rem 1rem 0.5rem;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 .5rem;
+      font-size: 1.6rem;
+    }
+
+    .aviso {
+      display: inline-block;
+      background: #fff3cd;
+      border: 1px solid #e0c36a;
+      color: #6b5300;
+      padding: .5rem .9rem;
+      border-radius: 8px;
+      font-size: .9rem;
+    }
+
+    main {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+    }
+
+    .tarjeta {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.2rem;
+      width: 230px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+      text-align: center;
+    }
+
+    .tarjeta h2 {
+      margin: 0 0 .8rem;
+      color: #7a3e9d;
+    }
+
+    .valor {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .etiqueta {
+      font-size: .8rem;
+      color: #776b83;
+      margin-bottom: .6rem;
+    }
+
+    button {
+      background: #7a3e9d;
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: .5rem 1.2rem;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: .5rem;
+    }
+
+    button:hover {
+      background: #5f2e7b;
+    }
+
+    .riego {
+      font-size: .75rem;
+      color: #776b83;
+      margin-top: .6rem;
+      min-height: 1em;
+    }
+
+    footer {
+      text-align: center;
+      font-size: .8rem;
+      color: #776b83;
+      padding-bottom: 1.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Panel de sensores – Cultivo de orquídeas</h1>
+    <div class="aviso">Los sensores son <strong>simulados</strong>: los datos no provienen de dispositivos reales.</div>
+  </header>
+
+  <main id="panel"></main>
+  <footer>Actualización automática cada 2 segundos · <span id="hora">--</span></footer>
+
+  <script>
+    const panel = document.getElementById('panel');
+
+
+    function crearTarjeta(n) {
+      const div = document.createElement('div');
+      div.className = 'tarjeta';
+      div.id = 'nave-' + n.id;
+      div.innerHTML =
+        '<h2>' + n.nombre + '</h2>' +
+        '<div class="valor" data-t></div><div class="etiqueta">Temperatura</div>' +
+        '<div class="valor" data-h></div><div class="etiqueta">Humedad</div>' +
+        '<button>Regar</button>' +
+        '<div class="riego" data-r></div>';
+      div.querySelector('button').addEventListener('click', async () => {
+        await fetch('/api/naves/' + n.id + '/regar', { method: 'POST' });
+        actualizar();
+      });
+      panel.appendChild(div);
+    }
+
+
+    async function actualizar() {
+      try {
+        const datos = await (await fetch('/api/naves')).json();
+        datos.naves.forEach((n) => {
+          if (!document.getElementById('nave-' + n.id)) crearTarjeta(n);
+          const el = document.getElementById('nave-' + n.id);
+          el.querySelector('[data-t]').textContent = n.temperatura.toFixed(1) + ' °C';
+          el.querySelector('[data-h]').textContent = n.humedad + ' %';
+          el.querySelector('[data-r]').textContent = n.ultimoRiego
+            ? 'Último riego: ' + new Date(n.ultimoRiego).toLocaleTimeString()
+            : 'Sin riegos registrados';
+        });
+        document.getElementById('hora').textContent = new Date(datos.hora).toLocaleTimeString();
+      } catch (e) {
+        document.getElementById('hora').textContent = 'sin conexión con la API';
+      }
+    }
+
+    actualizar();
+    setInterval(actualizar, 2000);
+  </script>
+</body>
+
+</html>
